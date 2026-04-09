@@ -119,8 +119,8 @@ export default function Intake() {
 
   if (done) {
     return (
-      <div className="w-full max-w-[480px] mx-auto mt-12">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 text-center">
+      <div className="w-full max-w-[580px] mx-auto mt-14">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -151,14 +151,14 @@ export default function Intake() {
   const showRotatingPlaceholder = step === 0 && !currentValue && current.rotatingPlaceholders
 
   return (
-    <div className="w-full max-w-[480px] mx-auto mt-12">
+    <div className="w-full max-w-[580px] mx-auto mt-14">
       <div className="glass-card overflow-hidden">
         <div className="h-[3px] bg-white/20">
           <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style={{ width: `${((step + 1) / total) * 100}%` }} />
         </div>
 
-        <div className="p-6 sm:p-8">
-          <div className="text-[10px] font-mono text-[#9595B5] mb-4">Step {step + 1} of {total}</div>
+        <div className="p-7 sm:p-10">
+          <div className="text-[11px] font-mono text-[#9595B5] mb-5">Step {step + 1} of {total}</div>
 
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -169,9 +169,9 @@ export default function Intake() {
               exit={{ opacity: 0, x: direction * -15 }}
               transition={{ duration: 0.2 }}
             >
-              <h3 className="text-[17px] font-semibold text-[#1a1a2e] leading-snug mb-1">{current.question}</h3>
-              {current.subtitle && <p className="text-[12px] text-[#9595B5] mb-4">{current.subtitle}</p>}
-              {!current.subtitle && <div className="mb-4" />}
+              <h3 className="text-[20px] sm:text-[22px] font-semibold text-[#1a1a2e] leading-snug mb-1.5">{current.question}</h3>
+              {current.subtitle && <p className="text-[13px] text-[#9595B5] mb-5">{current.subtitle}</p>}
+              {!current.subtitle && <div className="mb-5" />}
 
               {current.type === 'textarea' && (
                 <div className="relative">
@@ -180,7 +180,7 @@ export default function Intake() {
                     onChange={(e) => setCurrentValue(e.target.value)}
                     placeholder={current.rotatingPlaceholders ? '' : current.placeholder}
                     rows={3}
-                    className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[14px] text-[#1a1a2e] placeholder-[#9595B5] px-4 py-3 resize-none focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all relative z-10"
+                    className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-4 resize-none focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all relative z-10"
                     style={showRotatingPlaceholder ? { background: 'transparent' } : undefined}
                   />
                   {showRotatingPlaceholder && (
@@ -198,7 +198,7 @@ export default function Intake() {
                   onChange={(e) => setCurrentValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={current.placeholder}
-                  className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[14px] text-[#1a1a2e] placeholder-[#9595B5] px-4 py-3 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-4 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
                 />
               )}
 
@@ -208,7 +208,7 @@ export default function Intake() {
                     <button
                       key={opt}
                       onClick={() => goNext(opt)}
-                      className="w-full text-left px-4 py-3 rounded-xl text-[14px] text-[#1a1a2e] bg-white/60 backdrop-blur-sm border border-white/40 hover:border-primary/40 hover:text-primary hover:bg-white/80 transition-all"
+                      className="w-full text-left px-5 py-3.5 rounded-xl text-[15px] text-[#1a1a2e] bg-white/60 backdrop-blur-sm border border-white/40 hover:border-primary/40 hover:text-primary hover:bg-white/80 transition-all"
                     >
                       {opt}
                     </button>
@@ -230,7 +230,7 @@ export default function Intake() {
               <button
                 onClick={() => goNext()}
                 disabled={!currentValue.trim()}
-                className="px-5 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-medium rounded-full transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-medium rounded-full transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
               >
                 {step === total - 1 ? 'Submit' : 'Continue'}
               </button>
