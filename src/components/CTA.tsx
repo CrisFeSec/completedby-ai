@@ -13,7 +13,7 @@ export default function CTA() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a href="#" className="w-full sm:w-auto text-center px-7 py-3 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-full transition-colors">
-              Get Started Free
+              Build My AI Employee
             </a>
             <a href="#" className="text-[14px] text-white/40 hover:text-white/70 transition-colors">
               Contact Sales &rsaquo;

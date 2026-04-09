@@ -18,7 +18,7 @@ export default function Navbar() {
         <div className="hidden sm:flex items-center gap-7">
           <a href="#features" className="text-[13px] text-[#64648C] hover:text-primary transition-colors">Features</a>
           <a href="#how-it-works" className="text-[13px] text-[#64648C] hover:text-primary transition-colors">How It Works</a>
-          <a href="#cta" className="text-[13px] font-medium text-white bg-primary hover:bg-primary-hover px-5 py-2 rounded-full transition-colors">Get Started</a>
+          <a href="#cta" className="text-[13px] font-medium text-white bg-primary hover:bg-primary-hover px-5 py-2 rounded-full transition-colors">Build My AI Employee</a>
         </div>
       </div>
     </nav>
