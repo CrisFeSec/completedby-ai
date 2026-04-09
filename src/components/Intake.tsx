@@ -180,11 +180,10 @@ export default function Intake() {
                     onChange={(e) => setCurrentValue(e.target.value)}
                     placeholder={current.rotatingPlaceholders ? '' : current.placeholder}
                     rows={3}
-                    className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-4 resize-none focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all relative z-10"
-                    style={showRotatingPlaceholder ? { background: 'transparent' } : undefined}
+                    className="w-full bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-4 resize-none focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
                   />
                   {showRotatingPlaceholder && (
-                    <div className="absolute top-0 left-0 px-4 py-3 text-[14px] z-0 pointer-events-none">
+                    <div className="absolute top-0 left-0 px-5 py-4 text-[15px] pointer-events-none">
                       <RotatingPlaceholder words={current.rotatingPlaceholders!} />
                     </div>
                   )}
