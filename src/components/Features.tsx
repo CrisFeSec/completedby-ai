@@ -9,12 +9,12 @@ export default function Features() {
   return (
     <section id="features" className="py-20 px-6">
       <div className="max-w-[980px] mx-auto">
-        <div className="text-center mb-14">
+        <div className="mb-14">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-3">Capabilities</p>
           <h2 className="text-[36px] sm:text-[44px] font-bold leading-[1.08] tracking-[-0.02em] text-[#1a1a2e]">
             Get to know what<br />your AI can do.
           </h2>
-          <div className="w-10 h-[3px] bg-gradient-to-r from-primary to-accent rounded-full mx-auto mt-4" />
+          <div className="w-10 h-[3px] bg-gradient-to-r from-primary to-accent rounded-full mt-4" />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
