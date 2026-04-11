@@ -1,7 +1,7 @@
 const steps = [
   { num: '01', title: 'Define the role.', desc: 'Tell us what you need — customer support, data entry, content writing, scheduling, or anything else.' },
   { num: '02', title: 'We configure it.', desc: 'Your AI employee gets trained on your specific workflows, tools, brand voice, and business rules.' },
-  { num: '03', title: 'Deploy instantly.', desc: 'Your AI employee goes live in under 60 seconds and starts working immediately.' },
+  { num: '03', title: 'Scale without hiring.', desc: 'Deploy your AI employee and keep your company growing — without increasing headcount.' },
 ]
 
 export default function HowItWorks() {

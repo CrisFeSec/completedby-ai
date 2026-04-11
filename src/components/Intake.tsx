@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface Step {
   question: string
   subtitle?: string
-  type: 'textarea' | 'input' | 'email' | 'options'
+  type: 'textarea' | 'input' | 'email' | 'options' | 'multi-select'
   placeholder?: string
   options?: string[]
   key: string
@@ -29,10 +29,33 @@ const STEPS: Step[] = [
   { question: 'What tools does this employee need?', type: 'textarea', placeholder: 'Instagram, TikTok, Canva...', key: 'tools' },
   { question: 'What should your employee call you?', type: 'input', placeholder: 'Your first name', key: 'name' },
   { question: 'What industry are you in?', subtitle: 'This helps your AI employee understand your business context.', type: 'input', placeholder: 'e.g. Real Estate, E-commerce...', key: 'industry' },
-  { question: "What's your biggest pain point?", subtitle: 'Your AI employee will help solve this challenge.', type: 'textarea', placeholder: 'Describe your main challenge...', key: 'painPoint' },
+  {
+    question: "What are your biggest pain points?",
+    subtitle: 'Select all that apply. Your AI employee will tackle these first.',
+    type: 'multi-select',
+    options: [
+      'Too many repetitive tasks',
+      'Not enough hours in the day',
+      'Hiring is too expensive',
+      'Inconsistent work quality',
+      'Slow response times',
+      'Scaling without adding headcount',
+      'Data entry & admin overload',
+      'Content creation bottleneck',
+    ],
+    key: 'painPoints',
+  },
   { question: 'How many employees do you currently have?', subtitle: 'This helps us understand your team size.', type: 'options', options: ['Just me', '2–10', '11–50', '51–200', '200+'], key: 'teamSize' },
   { question: "What's your budget for AI automation?", subtitle: 'This helps us tailor the perfect solution.', type: 'options', options: ['$500–$1,000/mo', '$1,000–$2,500/mo', '$2,500–$5,000/mo', '$5,000+/mo', 'Not sure yet'], key: 'budget' },
-  { question: "What's your email?", subtitle: "We'll send your AI employee details here.", type: 'email', placeholder: 'you@company.com', key: 'email' },
+]
+
+const GENERATING_LINES = [
+  'Analyzing your requirements...',
+  'Configuring AI capabilities...',
+  'Training on your industry...',
+  'Setting up integrations...',
+  'Optimizing workflows...',
+  'Finalizing your AI employee...',
 ]
 
 function RotatingPlaceholder({ words }: { words: string[] }) {
@@ -56,7 +79,6 @@ function RotatingPlaceholder({ words }: { words: string[] }) {
         }
       }, 100)
     } else {
-      // Erase
       let len = displayText.length
       timeout = setTimeout(function erase() {
         if (len > 0) {
@@ -81,12 +103,99 @@ function RotatingPlaceholder({ words }: { words: string[] }) {
   )
 }
 
+function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
+  const [lineIndex, setLineIndex] = useState(0)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    const lineInterval = setInterval(() => {
+      setLineIndex((prev) => {
+        if (prev >= GENERATING_LINES.length - 1) {
+          clearInterval(lineInterval)
+          return prev
+        }
+        return prev + 1
+      })
+    }, 600)
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(progressInterval)
+          return 100
+        }
+        return prev + 2
+      })
+    }, 70)
+
+    const doneTimeout = setTimeout(() => {
+      onComplete()
+    }, 4000)
+
+    return () => {
+      clearInterval(lineInterval)
+      clearInterval(progressInterval)
+      clearTimeout(doneTimeout)
+    }
+  }, [onComplete])
+
+  return (
+    <div className="py-8 text-center">
+      {/* Spinner */}
+      <div className="w-16 h-16 mx-auto mb-6 relative">
+        <div className="absolute inset-0 rounded-full border-2 border-primary/10" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+      </div>
+
+      <h3 className="text-[20px] sm:text-[22px] font-semibold text-[#1a1a2e] mb-6">
+        Building your AI employee...
+      </h3>
+
+      {/* Progress bar */}
+      <div className="w-full h-1.5 bg-white/30 rounded-full mb-6 overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+
+      {/* Status lines */}
+      <div className="space-y-2 min-h-[120px]">
+        {GENERATING_LINES.slice(0, lineIndex + 1).map((line, i) => (
+          <motion.div
+            key={line}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: i === lineIndex ? 1 : 0.4, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-2 justify-center text-[13px]"
+          >
+            {i < lineIndex ? (
+              <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              </div>
+            )}
+            <span className={i < lineIndex ? 'text-[#9595B5]' : 'text-[#1a1a2e]'}>{line}</span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Intake() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentValue, setCurrentValue] = useState('')
-  const [done, setDone] = useState(false)
+  const [selectedMulti, setSelectedMulti] = useState<string[]>([])
   const [direction, setDirection] = useState(1)
+  const [phase, setPhase] = useState<'questions' | 'generating' | 'ready' | 'done'>('questions')
+  const [email, setEmail] = useState('')
 
   const current = STEPS[step]
   const total = STEPS.length
@@ -98,8 +207,31 @@ export default function Intake() {
     setAnswers(updated)
     setCurrentValue('')
     setDirection(1)
-    if (step < total - 1) setStep(step + 1)
-    else setDone(true)
+    if (step < total - 1) {
+      setStep(step + 1)
+    } else {
+      // Last question answered → go to generating
+      setPhase('generating')
+    }
+  }
+
+  const goNextMulti = () => {
+    if (selectedMulti.length === 0) return
+    const updated = { ...answers, [current.key]: selectedMulti.join(', ') }
+    setAnswers(updated)
+    setSelectedMulti([])
+    setDirection(1)
+    if (step < total - 1) {
+      setStep(step + 1)
+    } else {
+      setPhase('generating')
+    }
+  }
+
+  const toggleMulti = (opt: string) => {
+    setSelectedMulti((prev) =>
+      prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
+    )
   }
 
   const goBack = () => {
@@ -111,13 +243,20 @@ export default function Intake() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && current.type !== 'textarea') {
+    if (e.key === 'Enter' && current.type !== 'textarea' && current.type !== 'multi-select') {
       e.preventDefault()
       goNext()
     }
   }
 
-  if (done) {
+  const handleEmailSubmit = () => {
+    if (!email.trim()) return
+    setAnswers((prev) => ({ ...prev, email: email.trim() }))
+    setPhase('done')
+  }
+
+  // DONE screen
+  if (phase === 'done') {
     return (
       <div className="w-full max-w-[580px] mx-auto mt-14">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-10 text-center">
@@ -128,7 +267,7 @@ export default function Intake() {
           </div>
           <h3 className="text-[20px] font-semibold text-[#1a1a2e] mb-1">You're all set, {answers.name}.</h3>
           <p className="text-[13px] text-[#64648C] mb-6">
-            Details will be sent to <span className="text-[#1a1a2e] font-medium">{answers.email}</span>
+            Your AI employee profile has been sent to <span className="text-[#1a1a2e] font-medium">{answers.email}</span>
           </p>
           <div className="grid grid-cols-2 gap-4 text-left bg-white/30 backdrop-blur-sm rounded-xl p-5 border border-white/40">
             {[
@@ -148,6 +287,62 @@ export default function Intake() {
     )
   }
 
+  // GENERATING screen
+  if (phase === 'generating') {
+    return (
+      <div className="w-full max-w-[580px] mx-auto mt-14">
+        <div className="glass-card overflow-hidden p-7 sm:p-10">
+          <GeneratingScreen onComplete={() => setPhase('ready')} />
+        </div>
+      </div>
+    )
+  }
+
+  // READY screen (email collection)
+  if (phase === 'ready') {
+    return (
+      <div className="w-full max-w-[580px] mx-auto mt-14">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="glass-card overflow-hidden p-7 sm:p-10 text-center"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-[22px] sm:text-[24px] font-bold text-[#1a1a2e] mb-2">
+            Your custom AI employee is ready.
+          </h3>
+          <p className="text-[14px] text-[#64648C] mb-6">
+            Enter your email and we'll send you everything — your AI employee profile, setup instructions, and next steps.
+          </p>
+          <div className="flex gap-2 max-w-[400px] mx-auto">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
+              placeholder="you@company.com"
+              autoFocus
+              className="flex-1 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-3.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+            <button
+              onClick={handleEmailSubmit}
+              disabled={!email.trim()}
+              className="px-6 py-3.5 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            >
+              Send
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // QUESTIONS flow
   const showRotatingPlaceholder = step === 0 && !currentValue && current.rotatingPlaceholders
 
   return (
@@ -214,10 +409,32 @@ export default function Intake() {
                   ))}
                 </div>
               )}
+
+              {current.type === 'multi-select' && (
+                <div className="grid grid-cols-2 gap-2">
+                  {current.options!.map((opt) => {
+                    const selected = selectedMulti.includes(opt)
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => toggleMulti(opt)}
+                        className={`text-left px-4 py-3 rounded-xl text-[13px] border transition-all ${
+                          selected
+                            ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                            : 'bg-white/60 backdrop-blur-sm border-white/40 text-[#1a1a2e] hover:border-primary/20 hover:bg-white/80'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
 
-          {current.type !== 'options' && (
+          {/* Actions for textarea / input */}
+          {(current.type === 'textarea' || current.type === 'input' || current.type === 'email') && (
             <div className="flex items-center justify-between mt-4">
               <div>
                 {step > 0 && (
@@ -231,15 +448,36 @@ export default function Intake() {
                 disabled={!currentValue.trim()}
                 className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-medium rounded-full transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
               >
-                {step === total - 1 ? 'Submit' : 'Continue'}
+                Continue
               </button>
             </div>
           )}
 
+          {/* Actions for single-select options */}
           {current.type === 'options' && step > 0 && (
             <div className="mt-4">
               <button onClick={goBack} className="text-[13px] text-[#9595B5] hover:text-primary transition-colors">
                 &lsaquo; Back
+              </button>
+            </div>
+          )}
+
+          {/* Actions for multi-select */}
+          {current.type === 'multi-select' && (
+            <div className="flex items-center justify-between mt-4">
+              <div>
+                {step > 0 && (
+                  <button onClick={goBack} className="text-[13px] text-[#9595B5] hover:text-primary transition-colors">
+                    &lsaquo; Back
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={goNextMulti}
+                disabled={selectedMulti.length === 0}
+                className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-medium rounded-full transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+              >
+                Continue
               </button>
             </div>
           )}
