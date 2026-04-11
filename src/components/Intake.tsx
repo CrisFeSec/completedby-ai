@@ -116,7 +116,7 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
         }
         return prev + 1
       })
-    }, 600)
+    }, 300)
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -124,13 +124,13 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
           clearInterval(progressInterval)
           return 100
         }
-        return prev + 2
+        return prev + 5
       })
-    }, 70)
+    }, 40)
 
     const doneTimeout = setTimeout(() => {
       onComplete()
-    }, 4000)
+    }, 2000)
 
     return () => {
       clearInterval(lineInterval)
