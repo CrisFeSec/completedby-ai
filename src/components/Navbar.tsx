@@ -12,8 +12,8 @@ export default function Navbar() {
   return (
     <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/50 backdrop-blur-xl border-b border-white/30 shadow-[0_4px_30px_rgba(108,92,231,0.06)]' : ''}`}>
       <div className="max-w-[980px] mx-auto px-6 flex items-center justify-between h-14">
-        <a href="#" className="text-[15px] font-semibold tracking-tight text-[#1a1a2e]">
-          CompletedBy<span className="text-primary">.AI</span>
+        <a href="#" className="text-[18px] font-medium text-[#1a1a2e]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          CompletedBy
         </a>
         <div className="hidden sm:flex items-center gap-7">
           <a href="#features" className="text-[13px] text-[#64648C] hover:text-primary transition-colors">Features</a>
