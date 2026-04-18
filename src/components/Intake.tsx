@@ -249,10 +249,26 @@ export default function Intake() {
     }
   }
 
-  const handleEmailSubmit = () => {
+  const handleEmailSubmit = async () => {
     if (!email.trim()) return
-    setAnswers((prev) => ({ ...prev, email: email.trim() }))
+    const submission = { ...answers, email: email.trim() }
+    setAnswers(submission)
     setPhase('done')
+
+    // Fire-and-forget POST to Google Sheets
+    try {
+      await fetch(
+        'https://script.google.com/macros/s/AKfycbzi8PgRRBCG6RJjM6qpdj8LYx7dJWSjotusLNkg2TMDKFF4EcLhFxjPSE1rszhSCeXZDw/exec',
+        {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(submission),
+        }
+      )
+    } catch (err) {
+      console.error('Submission failed:', err)
+    }
   }
 
   // DONE screen
