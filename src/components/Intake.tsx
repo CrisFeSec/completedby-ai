@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Step {
@@ -58,67 +58,6 @@ const GENERATING_LINES = [
   'Finalizing your AI employee...',
 ]
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzi8PgRRBCG6RJjM6qpdj8LYx7dJWSjotusLNkg2TMDKFF4EcLhFxjPSE1rszhSCeXZDw/exec'
-
-// ---------- Helper functions for chat personalization ----------
-
-const KNOWN_TOOLS = [
-  'instagram', 'tiktok', 'canva', 'gmail', 'slack', 'hubspot', 'notion',
-  'salesforce', 'airtable', 'shopify', 'google calendar', 'outlook',
-  'facebook', 'linkedin', 'twitter', 'x.com', 'zapier', 'discord',
-  'whatsapp', 'zoom', 'calendly', 'stripe', 'quickbooks', 'excel',
-  'google sheets', 'google docs', 'trello', 'asana', 'monday',
-]
-
-function getToolsAck(toolsString: string): string {
-  if (!toolsString) return "I'll adapt to your exact stack"
-  const lower = toolsString.toLowerCase()
-  const matched = KNOWN_TOOLS.filter((t) => lower.includes(t))
-  if (matched.length === 0) return "I'll adapt to your exact stack — no problem"
-  const nice = matched.slice(0, 3).map((t) => t.replace(/\b\w/g, (c) => c.toUpperCase()))
-  if (matched.length === 1) return `${nice[0]} — fully supported, native integration`
-  if (matched.length === 2) return `${nice[0]} and ${nice[1]} — both fully supported`
-  return `${nice[0]}, ${nice[1]}, ${nice[2]} — all native integrations`
-}
-
-function getROI(teamSize: string): { hoursRange: string; fteEquivalent: string } {
-  switch (teamSize) {
-    case 'Just me':
-      return { hoursRange: '20+ hours', fteEquivalent: 'half a full-time hire' }
-    case '2–10':
-      return { hoursRange: '40–60 hours', fteEquivalent: 'a full-time employee' }
-    case '11–50':
-      return { hoursRange: '150+ hours', fteEquivalent: '3 full-time employees' }
-    case '51–200':
-      return { hoursRange: '500+ hours', fteEquivalent: '10 full-time employees' }
-    case '200+':
-      return { hoursRange: '1,000+ hours', fteEquivalent: '20+ full-time employees' }
-    default:
-      return { hoursRange: 'significant hours', fteEquivalent: 'multiple hires' }
-  }
-}
-
-function getFirstPainPoint(painPointsString: string): string {
-  if (!painPointsString) return ''
-  return painPointsString.split(',')[0].trim().toLowerCase()
-}
-
-function postToSheet(payload: Record<string, unknown>) {
-  // Fire-and-forget
-  try {
-    fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-    }).catch((e) => console.error('Submission failed:', e))
-  } catch (err) {
-    console.error('Submission failed:', err)
-  }
-}
-
-// ---------- Animated typing placeholder (existing) ----------
-
 function RotatingPlaceholder({ words }: { words: string[] }) {
   const [index, setIndex] = useState(0)
   const [displayText, setDisplayText] = useState('')
@@ -164,8 +103,6 @@ function RotatingPlaceholder({ words }: { words: string[] }) {
   )
 }
 
-// ---------- Generating screen (existing) ----------
-
 function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
   const [lineIndex, setLineIndex] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -204,6 +141,7 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="py-8 text-center">
+      {/* Spinner */}
       <div className="w-16 h-16 mx-auto mb-6 relative">
         <div className="absolute inset-0 rounded-full border-2 border-primary/10" />
         <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
@@ -213,6 +151,7 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
         Building your AI employee...
       </h3>
 
+      {/* Progress bar */}
       <div className="w-full h-1.5 bg-white/30 rounded-full mb-6 overflow-hidden">
         <motion.div
           className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
@@ -222,6 +161,7 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
         />
       </div>
 
+      {/* Status lines */}
       <div className="space-y-2 min-h-[120px]">
         {GENERATING_LINES.slice(0, lineIndex + 1).map((line, i) => (
           <motion.div
@@ -248,308 +188,14 @@ function GeneratingScreen({ onComplete }: { onComplete: () => void }) {
   )
 }
 
-// ---------- Chat screen (JARVIS-style) ----------
-
-type Sender = 'bot' | 'user'
-interface ChatMessage {
-  id: number
-  sender: Sender
-  text: string
-}
-
-type ChatStage =
-  | 'greeting'
-  | 'acknowledge'
-  | 'industry'
-  | 'roi'
-  | 'awaitingPlanClick'
-  | 'emailRequest'
-  | 'awaitingEmail'
-  | 'emailConfirm'
-  | 'callAsk'
-  | 'awaitingCallChoice'
-  | 'final'
-  | 'done'
-
-interface ChatScreenProps {
-  answers: Record<string, string>
-  onComplete: (email: string, wantsCall: boolean) => void
-}
-
-function ChatScreen({ answers, onComplete }: ChatScreenProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [stage, setStage] = useState<ChatStage>('greeting')
-  const [isTyping, setIsTyping] = useState(false)
-  const [email, setEmail] = useState('')
-  const [emailSubmitting, setEmailSubmitting] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const idCounter = useRef(0)
-
-  const nextId = () => {
-    idCounter.current += 1
-    return idCounter.current
-  }
-
-  const addBotMessage = (text: string, delay = 1200) => {
-    return new Promise<void>((resolve) => {
-      setIsTyping(true)
-      setTimeout(() => {
-        setIsTyping(false)
-        setMessages((prev) => [...prev, { id: nextId(), sender: 'bot', text }])
-        setTimeout(resolve, 300)
-      }, delay)
-    })
-  }
-
-  const addUserMessage = (text: string) => {
-    setMessages((prev) => [...prev, { id: nextId(), sender: 'user', text }])
-  }
-
-  // Auto-scroll on new message / typing indicator
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages, isTyping])
-
-  // State machine driver — queues bot messages automatically
-  useEffect(() => {
-    let cancelled = false
-    async function run() {
-      if (stage === 'greeting') {
-        await addBotMessage(`Analysis complete, ${answers.name || 'there'}. 👋`, 800)
-        if (!cancelled) setStage('acknowledge')
-      } else if (stage === 'acknowledge') {
-        const task = (answers.task || '').trim()
-        const toolsAck = getToolsAck(answers.tools || '')
-        const taskLine = task
-          ? `You want me to ${task.toLowerCase().replace(/\.$/, '')}.`
-          : `I've reviewed your requirements.`
-        await addBotMessage(`${taskLine} I've scanned the tools you mentioned — ${toolsAck}.`)
-        if (!cancelled) setStage('industry')
-      } else if (stage === 'industry') {
-        const industry = (answers.industry || '').trim()
-        const firstPain = getFirstPainPoint(answers.painPoints || '')
-        let line = ''
-        if (industry && firstPain) {
-          line = `You're in ${industry}, and your biggest challenge is "${firstPain}". That's literally what I was built for.`
-        } else if (industry) {
-          line = `You're in ${industry} — I've been trained on that space extensively.`
-        } else if (firstPain) {
-          line = `Your biggest challenge is "${firstPain}". That's literally what I was built for.`
-        } else {
-          line = `I've got a clear picture of what you need.`
-        }
-        await addBotMessage(line)
-        if (!cancelled) setStage('roi')
-      } else if (stage === 'roi') {
-        const { hoursRange, fteEquivalent } = getROI(answers.teamSize || '')
-        await addBotMessage(
-          `Based on a ${answers.teamSize || 'team'} operation, I can save you roughly ${hoursRange} per week — that's equivalent to ${fteEquivalent}, without the hiring cost.`
-        )
-        if (!cancelled) setStage('awaitingPlanClick')
-      } else if (stage === 'emailRequest') {
-        await addBotMessage(
-          `Drop your email and I'll send your full deployment plan right now.`,
-          900
-        )
-        if (!cancelled) setStage('awaitingEmail')
-      } else if (stage === 'emailConfirm') {
-        await addBotMessage(`Got it. Sending now to ${email}. ✉️`, 700)
-        if (!cancelled) setStage('callAsk')
-      } else if (stage === 'callAsk') {
-        await addBotMessage(
-          `Want to jump on a 15-min call so I can go live in your business today? No prep needed — I already have everything.`,
-          1200
-        )
-        if (!cancelled) setStage('awaitingCallChoice')
-      }
-    }
-    run()
-    return () => {
-      cancelled = true
-    }
-  }, [stage])
-
-  const handlePlanClick = () => {
-    addUserMessage('Show me my deployment plan')
-    setStage('emailRequest')
-  }
-
-  const handleEmailSubmit = () => {
-    if (!email.trim() || emailSubmitting) return
-    setEmailSubmitting(true)
-    const trimmed = email.trim()
-    addUserMessage(trimmed)
-
-    // Fire initial POST with wantsCall = pending
-    postToSheet({ ...answers, email: trimmed, wantsCall: null })
-
-    setStage('emailConfirm')
-  }
-
-  const handleCallChoice = (wantsCall: boolean) => {
-    const text = wantsCall ? 'Yes, book a call' : 'Maybe later'
-    addUserMessage(text)
-
-    // Re-POST with the final wantsCall decision
-    postToSheet({ ...answers, email, wantsCall })
-
-    ;(async () => {
-      const finalLine = wantsCall
-        ? `Perfect. We'll send a calendar link to ${email} within the hour.`
-        : `No problem. Check your inbox at ${email} — everything you need is there.`
-      await addBotMessage(finalLine, 1000)
-      setTimeout(() => onComplete(email, wantsCall), 1800)
-    })()
-
-    setStage('final')
-  }
-
-  return (
-    <div className="w-full max-w-[580px] mx-auto mt-14">
-      <div className="glass-card overflow-hidden">
-        {/* Chat header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/40 bg-white/20 text-left">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-            <span className="text-white text-[14px]">✨</span>
-          </div>
-          <div>
-            <div className="text-[14px] font-semibold text-[#1a1a2e] leading-tight">Your AI Employee</div>
-            <div className="text-[11px] text-[#64648C] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              online · ready
-            </div>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div
-          ref={scrollRef}
-          className="p-5 space-y-3 max-h-[420px] overflow-y-auto"
-        >
-          <AnimatePresence initial={false}>
-            {messages.map((m) => (
-              <motion.div
-                key={m.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={
-                    m.sender === 'bot'
-                      ? 'bg-white/80 border border-white/60 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%] text-[14px] text-[#1a1a2e] leading-[1.5] shadow-sm text-left'
-                      : 'bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%] text-[14px] leading-[1.5] text-left'
-                  }
-                >
-                  {m.text}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="bg-white/80 border border-white/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" />
-              </div>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Interactive footer — changes based on stage */}
-        <div className="px-5 pb-5 pt-1">
-          {stage === 'awaitingPlanClick' && !isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap gap-2"
-            >
-              <button
-                onClick={handlePlanClick}
-                className="px-5 py-2.5 rounded-full text-[13px] font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
-              >
-                Show me my deployment plan →
-              </button>
-            </motion.div>
-          )}
-
-          {stage === 'awaitingEmail' && !isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex gap-2"
-            >
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleEmailSubmit()
-                }}
-                placeholder="you@company.com"
-                autoFocus
-                disabled={emailSubmitting}
-                className="flex-1 bg-white/60 backdrop-blur-sm border border-white/40 rounded-full text-[14px] text-[#1a1a2e] placeholder-[#9595B5] px-4 py-2.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
-              />
-              <button
-                onClick={handleEmailSubmit}
-                disabled={!email.trim() || emailSubmitting}
-                className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-medium rounded-full transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-              >
-                Send
-              </button>
-            </motion.div>
-          )}
-
-          {stage === 'awaitingCallChoice' && !isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap gap-2"
-            >
-              <button
-                onClick={() => handleCallChoice(true)}
-                className="px-5 py-2.5 rounded-full text-[13px] font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
-              >
-                Yes, book a call
-              </button>
-              <button
-                onClick={() => handleCallChoice(false)}
-                className="px-5 py-2.5 rounded-full text-[13px] font-medium bg-white/60 backdrop-blur-sm border border-white/40 text-[#1a1a2e] hover:bg-white/80 transition-colors"
-              >
-                Maybe later
-              </button>
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------- Main Intake component ----------
-
 export default function Intake() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [currentValue, setCurrentValue] = useState('')
   const [selectedMulti, setSelectedMulti] = useState<string[]>([])
   const [direction, setDirection] = useState(1)
-  const [phase, setPhase] = useState<'questions' | 'generating' | 'chat' | 'done'>('questions')
-  const [finalEmail, setFinalEmail] = useState('')
-  const [finalWantsCall, setFinalWantsCall] = useState(false)
+  const [phase, setPhase] = useState<'questions' | 'generating' | 'ready' | 'done'>('questions')
+  const [email, setEmail] = useState('')
 
   const current = STEPS[step]
   const total = STEPS.length
@@ -564,6 +210,7 @@ export default function Intake() {
     if (step < total - 1) {
       setStep(step + 1)
     } else {
+      // Last question answered → go to generating
       setPhase('generating')
     }
   }
@@ -602,10 +249,26 @@ export default function Intake() {
     }
   }
 
-  const handleChatComplete = (email: string, wantsCall: boolean) => {
-    setFinalEmail(email)
-    setFinalWantsCall(wantsCall)
+  const handleEmailSubmit = async () => {
+    if (!email.trim()) return
+    const submission = { ...answers, email: email.trim() }
+    setAnswers(submission)
     setPhase('done')
+
+    // Fire-and-forget POST to Google Sheets
+    try {
+      await fetch(
+        'https://script.google.com/macros/s/AKfycbzi8PgRRBCG6RJjM6qpdj8LYx7dJWSjotusLNkg2TMDKFF4EcLhFxjPSE1rszhSCeXZDw/exec',
+        {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(submission),
+        }
+      )
+    } catch (err) {
+      console.error('Submission failed:', err)
+    }
   }
 
   // DONE screen
@@ -619,15 +282,9 @@ export default function Intake() {
             </svg>
           </div>
           <h3 className="text-[20px] font-semibold text-[#1a1a2e] mb-1">You're all set, {answers.name}.</h3>
-          <p className="text-[13px] text-[#64648C] mb-2">
-            Your AI employee profile has been sent to <span className="text-[#1a1a2e] font-medium">{finalEmail}</span>
+          <p className="text-[13px] text-[#64648C] mb-6">
+            Your AI employee profile has been sent to <span className="text-[#1a1a2e] font-medium">{answers.email}</span>
           </p>
-          {finalWantsCall && (
-            <p className="text-[13px] text-primary font-medium mb-6">
-              We'll reach out within the hour to book your deployment call.
-            </p>
-          )}
-          {!finalWantsCall && <div className="mb-6" />}
           <div className="grid grid-cols-2 gap-4 text-left bg-white/30 backdrop-blur-sm rounded-xl p-5 border border-white/40">
             {[
               { label: 'Task', value: answers.task },
@@ -651,15 +308,54 @@ export default function Intake() {
     return (
       <div className="w-full max-w-[580px] mx-auto mt-14">
         <div className="glass-card overflow-hidden p-7 sm:p-10">
-          <GeneratingScreen onComplete={() => setPhase('chat')} />
+          <GeneratingScreen onComplete={() => setPhase('ready')} />
         </div>
       </div>
     )
   }
 
-  // CHAT screen (JARVIS)
-  if (phase === 'chat') {
-    return <ChatScreen answers={answers} onComplete={handleChatComplete} />
+  // READY screen (email collection)
+  if (phase === 'ready') {
+    return (
+      <div className="w-full max-w-[580px] mx-auto mt-14">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="glass-card overflow-hidden p-7 sm:p-10 text-center"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-[22px] sm:text-[24px] font-bold text-[#1a1a2e] mb-2">
+            Your custom AI employee is ready.
+          </h3>
+          <p className="text-[14px] text-[#64648C] mb-6">
+            Enter your email and we'll send you everything — your AI employee profile, setup instructions, and next steps.
+          </p>
+          <div className="flex gap-2 max-w-[400px] mx-auto">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
+              placeholder="you@company.com"
+              autoFocus
+              className="flex-1 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-3.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+            <button
+              onClick={handleEmailSubmit}
+              disabled={!email.trim()}
+              className="px-6 py-3.5 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            >
+              Send
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
   }
 
   // QUESTIONS flow
