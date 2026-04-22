@@ -43,11 +43,13 @@ export default function Hero() {
           Deploy intelligent AI coworkers that handle your tasks around the clock. No breaks. No downtime. No overhead.
         </p>
 
-        <a href="#cta" className="inline-block text-primary text-[16px] font-medium hover:underline mb-4">
+        <a href="#intake" className="inline-block text-primary text-[16px] font-medium hover:underline mb-4">
           Learn more &rsaquo;
         </a>
 
-        <Intake />
+        <div id="intake" className="scroll-mt-24">
+          <Intake />
+        </div>
       </div>
     </section>
   )

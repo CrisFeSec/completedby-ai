@@ -13,10 +13,10 @@ export default function CTA() {
             </p>
           </div>
           <div className="flex flex-col gap-3 shrink-0">
-            <a href="#" className="text-center px-7 py-3 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-full transition-colors">
+            <a href="#intake" className="text-center px-7 py-3 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-full transition-colors">
               Build My AI Employee
             </a>
-            <a href="#" className="text-center text-[14px] text-white/40 hover:text-white/70 transition-colors">
+            <a href="#intake" className="text-center text-[14px] text-white/40 hover:text-white/70 transition-colors">
               Contact Sales &rsaquo;
             </a>
           </div>

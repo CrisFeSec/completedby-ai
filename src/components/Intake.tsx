@@ -195,7 +195,7 @@ declare global {
   }
 }
 
-function BookScreen({ email, onBooked, onSkip }: { email: string; onBooked: () => void; onSkip: () => void }) {
+function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }) {
   const widgetRef = useRef<HTMLDivElement>(null)
 
   // Listen for Calendly's "event_scheduled" postMessage
@@ -247,14 +247,15 @@ function BookScreen({ email, onBooked, onSkip }: { email: string; onBooked: () =
   }, [email])
 
   return (
-    <div className="w-full max-w-[720px] mx-auto mt-14">
+    // Break out of parent's max-width so the Calendly card can be wider than the hero column
+    <div className="relative left-1/2 -translate-x-1/2 w-screen px-6 sm:px-12 mt-14">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="glass-card overflow-hidden"
+        className="glass-card overflow-hidden mx-auto w-full max-w-[1100px]"
       >
-        <div className="p-6 sm:p-8 text-center border-b border-white/40">
+        <div className="p-6 sm:p-10 text-center border-b border-white/40">
           <h3 className="text-[20px] sm:text-[22px] font-bold text-[#1a1a2e] mb-1.5">
             Last step — book your deployment call.
           </h3>
@@ -264,16 +265,8 @@ function BookScreen({ email, onBooked, onSkip }: { email: string; onBooked: () =
         </div>
         <div
           ref={widgetRef}
-          style={{ minWidth: '320px', height: '700px' }}
+          style={{ minWidth: '320px', height: '1100px' }}
         />
-        <div className="p-4 text-center border-t border-white/40">
-          <button
-            onClick={onSkip}
-            className="text-[13px] text-[#9595B5] hover:text-primary transition-colors"
-          >
-            Skip for now &rsaquo;
-          </button>
-        </div>
       </motion.div>
     </div>
   )
@@ -424,7 +417,7 @@ export default function Intake() {
 
   // BOOK screen (Calendly embed)
   if (phase === 'book') {
-    return <BookScreen email={email} onBooked={async () => { await recordBooking(); setPhase('done') }} onSkip={() => setPhase('done')} />
+    return <BookScreen email={email} onBooked={async () => { await recordBooking(); setPhase('done') }} />
   }
 
   // GENERATING screen
