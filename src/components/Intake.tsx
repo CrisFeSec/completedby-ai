@@ -247,15 +247,14 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
   }, [email])
 
   return (
-    // Break out of parent's max-width so the Calendly card can be wider than the hero column
-    <div className="relative left-1/2 -translate-x-1/2 w-screen px-6 sm:px-12 mt-14">
+    <div className="w-full mx-auto mt-10">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="glass-card overflow-hidden mx-auto w-full max-w-[1100px]"
+        className="glass-card overflow-hidden"
       >
-        <div className="p-6 sm:p-10 text-center border-b border-white/40">
+        <div className="p-6 sm:p-8 text-center border-b border-white/40">
           <h3 className="text-[20px] sm:text-[22px] font-bold text-[#1a1a2e] mb-1.5">
             Last step — book your deployment call.
           </h3>
@@ -265,7 +264,7 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
         </div>
         <div
           ref={widgetRef}
-          style={{ minWidth: '320px', height: '1100px' }}
+          style={{ minWidth: '320px', height: '720px' }}
         />
       </motion.div>
     </div>
