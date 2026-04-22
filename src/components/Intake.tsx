@@ -197,15 +197,25 @@ declare global {
 
 function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }) {
   const widgetRef = useRef<HTMLDivElement>(null)
+  const [iframeHeight, setIframeHeight] = useState(640)
 
-  // Listen for Calendly's "event_scheduled" postMessage
+  // Listen for Calendly events: scheduled (success) + view changes (resize)
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (typeof e.data !== 'object' || !e.data) return
       const evt = (e.data as { event?: string }).event
+      if (!evt || typeof evt !== 'string' || !evt.startsWith('calendly')) return
+
       if (evt === 'calendly.event_scheduled') {
         onBooked()
+        return
       }
+
+      // Tighten the iframe height to whichever Calendly view is showing.
+      // Avoids huge empty white space when the date-picker is shown.
+      if (evt === 'calendly.event_type_viewed') setIframeHeight(640)
+      else if (evt === 'calendly.date_and_time_selected') setIframeHeight(740)
+      else if (evt === 'calendly.profile_page_viewed') setIframeHeight(640)
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
@@ -218,7 +228,6 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
     const init = () => {
       if (!widgetRef.current) return
       if (window.Calendly) {
-        // Clear any prior render
         widgetRef.current.innerHTML = ''
         window.Calendly.initInlineWidget({
           url: calendlyUrl,
@@ -231,7 +240,6 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
     if (window.Calendly) {
       init()
     } else {
-      // Script still loading – poll briefly
       const interval = setInterval(() => {
         if (window.Calendly) {
           init()
@@ -247,14 +255,14 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
   }, [email])
 
   return (
-    <div className="w-full mx-auto mt-10">
+    <div className="w-full mx-auto mt-6 -mb-12 sm:-mb-16">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="glass-card overflow-hidden"
       >
-        <div className="p-6 sm:p-8 text-center border-b border-white/40">
+        <div className="p-5 sm:p-7 text-center border-b border-white/40">
           <h3 className="text-[20px] sm:text-[22px] font-bold text-[#1a1a2e] mb-1.5">
             Last step — book your deployment call.
           </h3>
@@ -264,7 +272,8 @@ function BookScreen({ email, onBooked }: { email: string; onBooked: () => void }
         </div>
         <div
           ref={widgetRef}
-          style={{ minWidth: '320px', height: '720px' }}
+          className="transition-[height] duration-300"
+          style={{ minWidth: '320px', height: `${iframeHeight}px` }}
         />
       </motion.div>
     </div>
