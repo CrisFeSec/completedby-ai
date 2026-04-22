@@ -46,13 +46,6 @@ const STEPS: Step[] = [
     key: 'painPoints',
   },
   { question: 'How many employees do you currently have?', subtitle: 'This helps us understand your team size.', type: 'options', options: ['Just me', '2–10', '11–50', '51–200', '200+'], key: 'teamSize' },
-  {
-    question: "What's the best phone number to reach you?",
-    subtitle: 'Your AI employee will text you here for confirmations, updates, and quick check-ins.',
-    type: 'tel',
-    placeholder: '+1 (555) 123-4567',
-    key: 'phone',
-  },
 ]
 
 const GENERATING_LINES = [
@@ -294,6 +287,7 @@ export default function Intake() {
   const [direction, setDirection] = useState(1)
   const [phase, setPhase] = useState<'questions' | 'generating' | 'ready' | 'book' | 'done'>('questions')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [booked, setBooked] = useState(false)
 
   const current = STEPS[step]
@@ -348,14 +342,15 @@ export default function Intake() {
     }
   }
 
-  const handleEmailSubmit = async () => {
-    if (!email.trim()) return
-    const trimmed = email.trim()
-    setAnswers((prev) => ({ ...prev, email: trimmed }))
+  const handleContactSubmit = async () => {
+    if (!email.trim() || !phone.trim()) return
+    const trimmedEmail = email.trim()
+    const trimmedPhone = phone.trim()
+    setAnswers((prev) => ({ ...prev, email: trimmedEmail, phone: trimmedPhone }))
     setPhase('book')
 
     // Fire-and-forget POST to Google Sheets (initial submission, booked=false)
-    const payload = { ...answers, email: trimmed, booked: false }
+    const payload = { ...answers, email: trimmedEmail, phone: trimmedPhone, booked: false }
     try {
       await fetch(
         'https://script.google.com/macros/s/AKfycbzi8PgRRBCG6RJjM6qpdj8LYx7dJWSjotusLNkg2TMDKFF4EcLhFxjPSE1rszhSCeXZDw/exec',
@@ -373,7 +368,7 @@ export default function Intake() {
 
   const recordBooking = async () => {
     setBooked(true)
-    const payload = { ...answers, email, booked: true }
+    const payload = { ...answers, email, phone, booked: true }
     try {
       await fetch(
         'https://script.google.com/macros/s/AKfycbzi8PgRRBCG6RJjM6qpdj8LYx7dJWSjotusLNkg2TMDKFF4EcLhFxjPSE1rszhSCeXZDw/exec',
@@ -445,6 +440,7 @@ export default function Intake() {
 
   // READY screen (email collection)
   if (phase === 'ready') {
+    const canSubmit = email.trim().length > 0 && phone.trim().length > 0
     return (
       <div className="w-full max-w-[580px] mx-auto mt-14">
         <motion.div
@@ -462,22 +458,33 @@ export default function Intake() {
             Your custom AI employee is ready.
           </h3>
           <p className="text-[14px] text-[#64648C] mb-6">
-            Enter your email and we'll send you everything — your AI employee profile, setup instructions, and next steps.
+            Drop your email and phone — we'll send your AI employee profile and your employee will text you for confirmations and quick check-ins.
           </p>
-          <div className="flex gap-2 max-w-[400px] mx-auto">
+          <div className="flex flex-col gap-3 max-w-[420px] mx-auto">
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && canSubmit) handleContactSubmit() }}
               placeholder="you@company.com"
+              autoComplete="email"
               autoFocus
-              className="flex-1 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-3.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+              className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-3.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && canSubmit) handleContactSubmit() }}
+              placeholder="+1 (555) 123-4567"
+              className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-[15px] text-[#1a1a2e] placeholder-[#9595B5] px-5 py-3.5 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
             />
             <button
-              onClick={handleEmailSubmit}
-              disabled={!email.trim()}
-              className="px-6 py-3.5 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+              onClick={handleContactSubmit}
+              disabled={!canSubmit}
+              className="px-6 py-3.5 bg-primary hover:bg-primary-hover text-white text-[14px] font-medium rounded-xl transition-colors disabled:opacity-25 disabled:cursor-not-allowed mt-1"
             >
               Send
             </button>
